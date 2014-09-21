@@ -1,0 +1,77 @@
+Statistical Inference Course Project: Basic Inferential Data Analysis
+====================================
+
+This is the project for the statistical inference class.  The project consists of two parts:
+
+1. Simulation exercises.
+2. Basic inferential data analysis.
+
+###Basic Inferential Data Analysis
+
+Now in the second portion of the class, we're going to analyze the ToothGrowth data in the R datasets package. 
+
+1. Load the ToothGrowth data and perform some basic exploratory data analyses 
+2. Provide a basic summary of the data.
+3. Use confidence intervals and hypothesis tests to compare tooth growth by supp and dose. (Use the techniques from class even if there's other approaches worth considering)
+4. State your conclusions and the assumptions needed for your conclusions. 
+
+####1. Load the ToothGrowth data and perform some basic exploratory data analyses and 2. Provide a basic summary of the data.
+
+The growth dataset looks at the effect of vitamin C on tooth growth in guinea pigs. The response is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid).
+
+```{r processing,echo=TRUE,warning=FALSE,message=FALSE,cache=TRUE}
+if (!require(datasets)) install.packages('datasets'); require(datasets)
+if (!require(ggplot2)) install.packages('ggplot2'); require(ggplot2)
+if (!require(plyr)) install.packages('plyr'); require(plyr)
+if (!require(reshape2)) install.packages('reshape2'); require(reshape2)
+
+ggplot(ToothGrowth,(aes(x = factor(dose), y = len, fill = supp))) + geom_boxplot()+xlab("Vitamin C dose (mg)") + ylab("tooth length")+ggtitle("Guinea Pigs' Tooth Growth")
+
+cdata <- ddply(ToothGrowth, c("dose", "supp"), summarise,
+               N    = length(len), 
+               min  = min(len),
+               q.25 = quantile(len, c(0.25)),
+               mean = mean(len),
+               median = median(len),
+               q.75 = quantile(len, c(0.75)),
+               max = max(len),
+               sd   = sd(len),
+               se   = sd / sqrt(N) )
+```
+
+As seen in the box plot above, the general relationship between tooth length and Vitamin C dose is positive.  As the dosage of either supplement administered increases, the tooth length increases.  At lower dosages, orange juice seems to outperform the ascorbic acid supplememt. A summary of the boxplot values can be seen in the table below.
+
+#####Basic summary data
+
+```{r summary,echo=FALSE,warning=FALSE,message=FALSE,cache=TRUE}
+cdata
+```
+
+
+####3. Use confidence intervals and hypothesis tests to compare tooth growth by supp and dose. (Use the techniques from class even if there's other approaches worth considering)
+
+Since the groups are independent, we will be using t confidence intervals.  This interval assumes unequal variance across the two groups.  We will compare tooth growth by supp and dose.
+
+```{r}
+
+dose.5<-ToothGrowth[ToothGrowth$dose==0.5,]
+dose1<-ToothGrowth[ToothGrowth$dose==1.0,]
+dose2<-ToothGrowth[ToothGrowth$dose==2.0,]
+d1<-t.test(len~supp , paired = FALSE,var.equal = FALSE, data = dose.5)$conf
+d2<-t.test(len~supp , paired = FALSE,var.equal = FALSE, data = dose1)$conf
+d3<-t.test(len~supp , paired = FALSE,var.equal = FALSE, data = dose2)$conf
+```
+
+We will test for the null hypothesis: mean OJ is equal to mean VC and alternate hypothesis: mean OJ is not equal to mean VC for each of the doses.
+
+Performing the t-test for dose 0.5 mg, the intervals are `r d1[1]` and `r d1[2]`, suggesting that the means are not equal and that the tooth length tends to be longer for the OJ supplements.  Therefore, we reject the null hypothesis and accept the alternate hypothesis.
+
+Performing the t-test for dose 1.0 mg, the intervals are `r d2[1]` and `r d2[2]`, suggesting that the means are not equal and that the tooth length tends to be longer for the OJ supplements.  Therefore, we reject the null hypothesis and accept the alternate hypothesis.
+
+Performing the t-test for dose 2.0 mg, the intervals are `r d3[1]` and `r d3[2]`, suggesting that the the differences between the two datasets can possibly have a zero difference.  Thus, there is a possibility that the means could be equal.  Therefore, we accept the null hypothesis and reject the alternate hypothesis.
+
+
+####4.State your conclusions and the assumptions needed for your conclusions. 
+In this analysis we performed t-tests using the confidence interval of 95%.  This  assumes unequal variance across the two groups.  
+
+This analysis statistically corroborates the initial assessments in Question 1 and 2. There is a difference for tooth length with supplement type and dosages under 2mg.  Guinea pigs that received dosages of <2mg of the orange juice supplement tended to have longer teeth when compared to the ascorbic acid supplement of the same dosage.  However, at the max dose of 2mg both supplements performed the same.
